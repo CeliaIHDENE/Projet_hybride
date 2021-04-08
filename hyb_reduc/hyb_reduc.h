@@ -9,10 +9,17 @@ struct shared_reduc_s
     /* A COMPLETER */
 
  
-   
+   sem_t *semaphore ;                  //declaration d un semaphore
+   pthread_mutex_t *mutex ;           // declaration d un mutexe
+   pthread_barrier_t *barriere ;     // declaration d une barriere
+   int nthreads ;                   // declaration du nombre  de threads
     
-    int nvals;        /* taille du tableau red_val */
-    double *red_val;  /* les valeurs a reduire */
+    
+    
+    
+    
+    int nvals;                   /* taille du tableau red_val */
+    double *red_val;            /* les valeurs a reduire */
 };
 typedef struct shared_reduc_s shared_reduc_t;
 
