@@ -7,8 +7,12 @@
 
 struct shared_exchg_s
 {
-    /* A COMPLETER */
+   int droit;
+   int gauche;
+   int nthreads;
+   sem_t semaphore;
 };
+
 typedef struct shared_exchg_s shared_exchg_t;
 
 /*
