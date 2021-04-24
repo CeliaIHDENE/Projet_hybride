@@ -1,14 +1,14 @@
 #ifndef __HYB_EXCHG_H
 #define __HYB_EXCHG_H
-
+#include <semaphore.h>
 #include <pthread.h>
 
 #include "mpi_decomp.h"
 
 struct shared_exchg_s
-{
-   int droit;
-   int gauche;
+{ 
+   double droit;
+   double gauche;
    int nthreads;
    sem_t semaphore;
 };

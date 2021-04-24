@@ -1,8 +1,10 @@
 #include "hyb_reduc.h"
-#include <string.h>
 #include <mpi.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
+ 
 void shared_reduc_init(shared_reduc_t *sh_red, int nthreads, int nvals)
 {
     /* A COMPLETER */
@@ -11,7 +13,7 @@ void shared_reduc_init(shared_reduc_t *sh_red, int nthreads, int nvals)
     //on va initialiser avec les val en parametre
   sh_red->nvals = nvals;
   sh_red->nthreads = nthreads;
-
+  sh_red->maitre= 0;
 //on alloue puis on initialise 
 
            /* Phase d'initialisation  */
@@ -47,14 +49,84 @@ void shared_reduc_destroy(shared_reduc_t *sh_red)
     
     
 }
-void hyb_reduc_sum(double *in, double *out, shared_reduc_t *sh_red)
-{
-    /* A COMPLETER */
-}
-
 /*
  * Reduction  hybride MPI/pthread
  * in  : tableau des valeurs a reduire (de dimension sh_red->nvals)
  * out : tableau des valeurs reduites  (de dimension sh_red->nvals)
  */
+void hyb_reduc_sum(double *in, double *out, shared_reduc_t *sh_red)
+{
+int maitre_elu =0;  // ai je un maitre 
+ 
+
+  pthread_mutex_lock(sh_red->mutex);
+ 
+  {
+
+    for (int i = 0; i < sh_red->nvals; i++)
+      {        
+        sh_red->red_val[i] += in[i];
+      }
+  if (sh_red->maitre ==0 ) {
+        maitre_elu =1;
+         sh_red->maitre =1;
+  }
+     }
+  pthread_mutex_unlock(sh_red->mutex);
+  pthread_barrier_wait(sh_red->barriere);
+
+ // Choix du thread pricipal
+
+  if (maitre_elu )
+    {
+
+      int rank,size;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+      double *tab = malloc(sizeof(double) * size);
+
+
+      for (int i = 0; i < sh_red->nvals; i++)
+        {
+          //on met tout dans le tableau 
+          MPI_Gather(&(sh_red->red_val[i]), 1, MPI_DOUBLE, tab, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+       
+       //on teste si on est le 0
+          if (rank == 0)
+            {
+              for (int j = 0; j < size; j++)
+                {
+                  out[i] =  out[i] +tab[j];
+                }}
+                       sh_red->red_val[i] = out[i];
+          }
+          
+          //on en a plus besoin donc on libere 
+      free(tab);      
+      //on partage
+      MPI_Bcast( sh_red->red_val, sh_red->nvals, MPI_DOUBLE, 0, MPI_COMM_WORLD);    
+      MPI_Bcast(out, sh_red->nvals, MPI_DOUBLE, 0, MPI_COMM_WORLD);  
+
+ 
+    }
+  else
+    {
+
+	//On attends 
+
+      sem_wait(sh_red->semaphore); 
+           
+      for (int i = 0; i < sh_red->nvals; i++)
+        {
+
+          out[i] = sh_red->red_val[i]; 
+        }
+
+     
+    }
+
+      sem_post(sh_red->semaphore);
+   
+}
 

@@ -16,7 +16,7 @@ struct shared_reduc_s
     
     
     
-    
+    int maitre;                    //le maitre
     
     int nvals;                   /* taille du tableau red_val */
     double *red_val;            /* les valeurs a reduire */
